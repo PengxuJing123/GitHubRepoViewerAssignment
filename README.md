@@ -1,102 +1,102 @@
 # GitHubRepoViewer
 
-A lightweight iOS app for browsing GitHub repositories and latest commit IDs for a target user.
+Eine leichtgewichtige iOS-App zum Durchsuchen von GitHub-Repositories und den neuesten Commit-IDs für einen Zielbenutzer.
 
-The app fetches repository lists from GitHub, displays them in a custom card-style table view, and supports opening repo links in Safari plus copying commit SHA values.
+Die App ruft Repository-Listen von GitHub ab, zeigt sie in einer benutzerdefinierten Tabellenansicht im Kartenstil an und unterstützt das Öffnen von Repo-Links in Safari sowie das Kopieren von Commit-SHA-Werten.
 
-## Table of Contents
+## Inhaltsverzeichnis
 
-- [Project Goals](#project-goals)
-- [Core Features](#core-features)
-- [Implementation Ideas](#implementation-ideas)
-- [Architecture Design](#architecture-design)
-- [Technology Selection](#technology-selection)
-- [Project Structure](#project-structure)
-- [Data Flow](#data-flow)
-- [Error Handling Strategy](#error-handling-strategy)
-- [Concurrency & Performance](#concurrency--performance)
-- [UI Design Notes](#ui-design-notes)
-- [Animation Design Concept](#animation-design-concept)
-- [Configuration](#configuration)
-- [How to Run](#how-to-run)
-- [Testing](#testing)
-- [Possible Future Improvements](#possible-future-improvements)
+- [Projektziele](#projektziele)
+- [Kernfunktionen](#kernfunktionen)
+- [Umsetzungsideen](#umsetzungsideen)
+- [Architekturdesign](#architekturdesign)
+- [Technologieauswahl](#technologieauswahl)
+- [Projektstruktur](#projektstruktur)
+- [Datenfluss](#datenfluss)
+- [Fehlerbehandlungsstrategie](#fehlerbehandlungsstrategie)
+- [Nebenläufigkeit & Performance](#nebenläufigkeit--performance)
+- [UI-Design-Hinweise](#ui-design-hinweise)
+- [Animationsdesign-Konzept](#animationsdesign-konzept)
+- [Konfiguration](#konfiguration)
+- [So wird es ausgeführt](#so-wird-es-ausgeführt)
+- [Tests](#tests)
+- [Mögliche zukünftige Verbesserungen](#mögliche-zukünftige-verbesserungen)
 
-## Project Goals
+## Projektziele
 
-- Build a clean and understandable iOS sample using modern Swift async/await.
-- Demonstrate network-layer abstraction with protocol-based service/client separation.
-- Provide a user-friendly list UI with loading skeleton state and commit loading state.
-- Keep the code easy to test and extend.
+- Eine saubere und verständliche iOS-Beispiel-App mit modernem Swift async/await erstellen.
+- Netzwerkebenen-Abstraktion mit protokollbasierter Trennung von Service/Client demonstrieren.
+- Eine benutzerfreundliche Listen-UI mit Lade-Skeleton-Zustand und Commit-Ladezustand bereitstellen.
+- Den Code leicht testbar und erweiterbar halten.
 
-## Core Features
+## Kernfunktionen
 
-- Fetch public repositories for a configured GitHub username.
-- Show repository metadata:
+- Öffentliche Repositories für einen konfigurierten GitHub-Benutzernamen abrufen.
+- Repository-Metadaten anzeigen:
   - Name
-  - Description
-  - Stars / Forks / Language
-- Fetch and show each repository's latest commit SHA.
-- Tap repository link to open in `SFSafariViewController`.
-- Tap commit row action to view and copy commit SHA.
-- Show skeleton-like loading state while repositories are loading.
-- Show per-cell commit loading indicator while commit request is in progress.
+  - Beschreibung
+  - Stars / Forks / Sprache
+- Neuesten Commit-SHA jedes Repositories abrufen und anzeigen.
+- Auf Repository-Link tippen, um ihn in `SFSafariViewController` zu öffnen.
+- Auf Commit-Zeilenaktion tippen, um Commit-SHA anzuzeigen und zu kopieren.
+- Skeleton-ähnlichen Ladezustand anzeigen, während Repositories geladen werden.
+- Pro-Zelle-Commit-Ladeindikator anzeigen, während Commit-Anfrage läuft.
 
-## Implementation Ideas
+## Umsetzungsideen
 
-### 1) Layered responsibilities
+### 1) Geschichtete Verantwortlichkeiten
 
-The app splits responsibilities into:
+Die App teilt Verantwortlichkeiten auf in:
 
-- `View` layer: rendering cells and handling user interactions.
-- `Controller` layer: orchestrating table view rendering and async tasks.
-- `Service` layer: business-level API use cases (`fetchRepos`, `fetchLastCommit`).
-- `Client` layer: low-level HTTP request execution and response validation.
-- `Model` layer: API response decoding models.
+- `View`-Schicht: Zellen rendern und Benutzerinteraktionen behandeln.
+- `Controller`-Schicht: Tabellenansicht-Rendering und asynchrone Aufgaben orchestrieren.
+- `Service`-Schicht: API-Use-Cases auf Geschäftsebene (`fetchRepos`, `fetchLastCommit`).
+- `Client`-Schicht: Low-Level-HTTP-Anfrageausführung und Antwortvalidierung.
+- `Model`-Schicht: Modelle zum Dekodieren von API-Antworten.
 
-This keeps network details out of the view/controller UI logic.
+Dies hält Netzwerkdetails aus der UI-Logik von View/Controller heraus.
 
-### 2) Progressive loading experience
+### 2) Progressives Ladeerlebnis
 
-The design intentionally separates loading into two phases:
+Das Design trennt das Laden absichtlich in zwei Phasen:
 
-- Phase A: repository list loading (global skeleton rows)
-- Phase B: per-repository commit loading (cell-level indicator)
+- Phase A: Laden der Repository-Liste (globale Skeleton-Zeilen)
+- Phase B: Laden der Commits pro Repository (Indikator auf Zellenebene)
 
-This provides faster perceived feedback to users.
+Dies bietet dem Benutzer schnelleres wahrgenommenes Feedback.
 
-### 3) Testability-first networking
+### 3) Netzwerk mit Fokus auf Testbarkeit
 
-`GitHubAPIClient` is consumed through a protocol (`GitHubAPIClientProtocol`) in the service layer, enabling mocking/replacement in unit tests.
+`GitHubAPIClient` wird in der Service-Schicht über ein Protokoll (`GitHubAPIClientProtocol`) konsumiert, wodurch Mocking/Ersetzen in Unit-Tests ermöglicht wird.
 
-Network tests use custom `URLProtocol` interception to avoid real network dependency.
+Netzwerktests verwenden benutzerdefinierte `URLProtocol`-Interception, um echte Netzwerkabhängigkeit zu vermeiden.
 
-## Architecture Design
+## Architekturdesign
 
-Current architecture is close to MVC with service-oriented networking.
+Die aktuelle Architektur ist nahe an MVC mit serviceorientiertem Networking.
 
-- `ViewController` handles UI composition and interaction events.
-- `RepoTableViewCell` encapsulates display and cell-level interaction callbacks via protocol.
-- `GitHubRepositoryService` is the domain facade for repository/commit use cases.
-- `GitHubAPIClient` focuses on request execution and HTTP result translation.
+- `ViewController` übernimmt UI-Komposition und Interaktionsereignisse.
+- `RepoTableViewCell` kapselt Anzeige und zellenspezifische Interaktions-Callbacks über ein Protokoll.
+- `GitHubRepositoryService` ist die Domänenfassade für Repository/Commit-Use-Cases.
+- `GitHubAPIClient` konzentriert sich auf Anfrageausführung und Übersetzung von HTTP-Ergebnissen.
 
-### Why this architecture
+### Warum diese Architektur
 
-- Simple enough for small apps.
-- Clear extension path:
-  - Add ViewModel later for MVVM migration.
-  - Add repository cache or persistence under service layer.
+- Einfach genug für kleine Apps.
+- Klarer Erweiterungspfad:
+  - Später ViewModel für MVVM-Migration hinzufügen.
+  - Repository-Cache oder Persistenz unter der Service-Schicht hinzufügen.
 
-## Technology Selection
+## Technologieauswahl
 
-- Language: Swift 5.x+ (modern concurrency syntax)
-- UI: UIKit (`UITableView`, custom `UITableViewCell`)
-- Concurrency: `async/await`, `Task`, `withTaskGroup`
+- Sprache: Swift 5.x+ (moderne Concurrency-Syntax)
+- UI: UIKit (`UITableView`, benutzerdefinierte `UITableViewCell`)
+- Nebenläufigkeit: `async/await`, `Task`, `withTaskGroup`
 - Networking: `URLSession`
-- Browser presentation: `SafariServices` (`SFSafariViewController`)
-- Testing: `XCTest`, `URLProtocol` stubbing
+- Browser-Präsentation: `SafariServices` (`SFSafariViewController`)
+- Tests: `XCTest`, `URLProtocol`-Stubbing
 
-## Project Structure
+## Projektstruktur
 
 ```text
 GitHubRepoViewer/
@@ -131,103 +131,103 @@ GitHubRepoViewer/
 └── GitHubRepoViewerUITests/
 ```
 
-## Data Flow
+## Datenfluss
 
-1. `ViewController` triggers `fetchGitHubRepositories()`.
-2. `GitHubRepositoryService.fetchRepos(user:)` composes endpoint and calls client.
-3. `GitHubAPIClient.request(urlString:)` executes HTTP request and validates status code.
-4. Response data is decoded into `[GitHubRepoModel]`.
-5. UI reloads with repository list.
-6. Controller concurrently fetches latest commit for each repo via `fetchLastCommit(fullName:)`.
-7. Visible cells update commit state individually.
+1. `ViewController` löst `fetchGitHubRepositories()` aus.
+2. `GitHubRepositoryService.fetchRepos(user:)` setzt Endpoint zusammen und ruft Client auf.
+3. `GitHubAPIClient.request(urlString:)` führt HTTP-Anfrage aus und validiert Statuscode.
+4. Antwortdaten werden in `[GitHubRepoModel]` dekodiert.
+5. UI lädt mit Repository-Liste neu.
+6. Controller ruft parallel den neuesten Commit für jedes Repo über `fetchLastCommit(fullName:)` ab.
+7. Sichtbare Zellen aktualisieren den Commit-Zustand individuell.
 
-## Error Handling Strategy
+## Fehlerbehandlungsstrategie
 
-`GitHubError` centralizes failures:
+`GitHubError` zentralisiert Fehler:
 
 - `invalidURL`
 - `invalidResponse(url:statusCode:data:)`
 - `decodingFailed(Error)`
 - `networkError(Error)`
 
-UI currently logs errors and continues rendering best-effort data.
+Die UI protokolliert derzeit Fehler und rendert weiterhin Best-Effort-Daten.
 
-## Concurrency & Performance
+## Nebenläufigkeit & Performance
 
-- Uses async tasks for non-blocking network operations.
-- Batches commit fetches with `withTaskGroup`.
-- `maxConcurrentRequests` controls parallelism for safer API usage.
-- Table uses estimated row height + automatic dimension.
+- Verwendet asynchrone Tasks für nicht blockierende Netzwerkoperationen.
+- Bündelt Commit-Abrufe mit `withTaskGroup`.
+- `maxConcurrentRequests` steuert Parallelität für sicherere API-Nutzung.
+- Tabelle verwendet geschätzte Zeilenhöhe + automatische Dimension.
 
-## UI Design Notes
+## UI-Design-Hinweise
 
-- Card-style custom cell with custom path and shadow.
-- Skeleton loading placeholder for initial list fetch.
-- Commit loading indicator per cell.
-- Link and commit actions are delegated to controller via protocol.
+- Benutzerdefinierte Zelle im Kartenstil mit benutzerdefiniertem Pfad und Schatten.
+- Skeleton-Ladeplatzhalter für initialen Listenabruf.
+- Commit-Ladeindikator pro Zelle.
+- Link- und Commit-Aktionen werden über ein Protokoll an den Controller delegiert.
 
-## Animation Design Concept
+## Animationsdesign-Konzept
 
-This project uses a two-stage loading animation strategy to improve perceived performance while keeping scrolling smooth.
+Dieses Projekt verwendet eine zweistufige Ladeanimationsstrategie, um die wahrgenommene Performance zu verbessern und gleichzeitig flüssiges Scrollen zu erhalten.
 
-### 1) Global skeleton phase (repository list loading)
+### 1) Globale Skeleton-Phase (Laden der Repository-Liste)
 
-- Before repository data is returned, table rows show a lightweight skeleton state.
-- The skeleton uses a subtle opacity pulse (`CABasicAnimation`) to indicate active loading without distracting the user.
-- Goal: avoid blank-screen waiting and establish immediate visual feedback.
+- Bevor Repository-Daten zurückgegeben werden, zeigen Tabellenzeilen einen leichten Skeleton-Zustand.
+- Das Skeleton verwendet einen subtilen Opazitäts-Puls (`CABasicAnimation`), um aktives Laden anzuzeigen, ohne den Benutzer abzulenken.
+- Ziel: Leeren Bildschirm vermeiden und sofortiges visuelles Feedback erzeugen.
 
-### 2) Per-cell commit loading phase (after list appears)
+### 2) Commit-Ladephase pro Zelle (nach Erscheinen der Liste)
 
-- Once repositories are rendered, each cell loads its latest commit asynchronously.
-- A small inline activity indicator is shown only for the commit field of that specific cell.
-- Goal: allow users to browse repository content immediately while commit details progressively appear.
+- Sobald Repositories gerendert sind, lädt jede Zelle asynchron ihren neuesten Commit.
+- Ein kleiner Inline-Aktivitätsindikator wird nur für das Commit-Feld dieser spezifischen Zelle angezeigt.
+- Ziel: Benutzer können Repository-Inhalte sofort durchsuchen, während Commit-Details progressiv erscheinen.
 
-### Transition behavior
+### Übergangsverhalten
 
-- Skeleton stops as soon as repository list data is bound to the cell.
-- Commit loading indicator stops when commit fetch finishes (success or failure), then shows:
-  - `Last commit: <SHA>` when available
-  - `No commit available` when unavailable
+- Skeleton stoppt, sobald Repository-Listendaten an die Zelle gebunden sind.
+- Commit-Ladeindikator stoppt, wenn Commit-Abruf abgeschlossen ist (Erfolg oder Fehler), dann zeigt:
+  - `Letzter Commit: <SHA>`, wenn verfügbar
+  - `Kein Commit verfügbar`, wenn nicht verfügbar
 
-### Performance considerations
+### Performance-Überlegungen
 
-- UI updates happen on the main thread and are scoped to visible cells.
-- Cell reuse resets loading and animation state in `prepareForReuse()` to avoid visual artifacts.
-- Commit requests are batched with controlled concurrency to reduce API pressure and keep scrolling responsive.
+- UI-Updates erfolgen im Hauptthread und sind auf sichtbare Zellen beschränkt.
+- Zellwiederverwendung setzt Lade- und Animationszustand in `prepareForReuse()` zurück, um visuelle Artefakte zu vermeiden.
+- Commit-Anfragen werden mit kontrollierter Nebenläufigkeit gebündelt, um API-Druck zu reduzieren und Scrollen reaktionsfähig zu halten.
 
-## Configuration
+## Konfiguration
 
-### GitHub User
+### GitHub-Benutzer
 
-Default GitHub username is configured in:
+Standard-GitHub-Benutzername wird konfiguriert in:
 
 - `GitHubRepositoryService.defaultUserName`
 
-### API Token
+### API-Token
 
-Token is currently defined in:
+Token ist derzeit definiert in:
 
 - `GitHubAPIConfiguration.token`
 
-Recommended for production:
+Für Produktion empfohlen:
 
-- Move token out of source code.
-- Inject via `.xcconfig`, environment variable, or secure keychain strategy.
+- Token aus dem Quellcode entfernen.
+- Über `.xcconfig`, Umgebungsvariable oder sichere Keychain-Strategie injizieren.
 
-## How to Run
+## So wird es ausgeführt
 
-1. Open `GitHubRepoViewer.xcodeproj` in Xcode.
-2. Select the `GitHubRepoViewer` scheme.
-3. Choose an iOS simulator.
-4. Build and run.
+1. `GitHubRepoViewer.xcodeproj` in Xcode öffnen.
+2. Das Schema `GitHubRepoViewer` auswählen.
+3. Einen iOS-Simulator auswählen.
+4. Bauen und ausführen.
 
-## Testing
+## Tests
 
-Run from Xcode:
+In Xcode ausführen:
 
 - Product -> Test
 
-Or command line:
+Oder Kommandozeile:
 
 ```bash
 xcodebuild test \
@@ -236,23 +236,22 @@ xcodebuild test \
   -destination 'platform=iOS Simulator,name=iPhone 15'
 ```
 
-Current tests include:
+Aktuelle Tests umfassen:
 
 - `GitHubAPIClientNetworkTests`
-  - URL validity handling
-  - 2xx success handling
-  - non-2xx response mapping
-  - network error mapping
+  - URL-Gültigkeitsbehandlung
+  - 2xx-Erfolgsbehandlung
+  - Nicht-2xx-Antwortzuordnung
+  - Netzwerkfehlerzuordnung
 - `GitHubRepoModelTests`
-  - decoding key mapping
-  - optional/null decoding
-  - missing required keys
+  - Dekodierungsschlüsselzuordnung
+  - Optional/Null-Dekodierung
+  - Fehlende erforderliche Schlüssel
 
-## Possible Future Improvements
+## Mögliche zukünftige Verbesserungen
 
-- Introduce ViewModel (MVVM) if view logic grows.
-- Add response caching layer.
-- Add retry/backoff strategy for transient API failures.
-- Add snapshot/UI tests for loading/loaded/error states.
-- Externalize configuration securely (especially API token).
-
+- ViewModel (MVVM) einführen, falls die View-Logik wächst.
+- Response-Caching-Schicht hinzufügen.
+- Retry/Backoff-Strategie für vorübergehende API-Fehler hinzufügen.
+- Snapshot/UI-Tests für Lade-/Geladen-/Fehlerzustände hinzufügen.
+- Konfiguration sicher externalisieren (insbesondere API-Token).
